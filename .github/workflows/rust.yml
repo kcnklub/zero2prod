@@ -33,7 +33,7 @@ jobs:
           --locked
 
       - name: Install postgres-client
-        run: sudo apt-get update && sudo apt-get install postgres-client -y
+        run: sudo apt-get update && sudo apt-get install postgresql-client -y
 
       - name: Migrate Database
         run: SKIP_DOCKER=true ./scripts/init_db.sh
