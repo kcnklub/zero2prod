@@ -1,5 +1,8 @@
 use std::net::TcpListener;
 
+use sqlx::{Connection, PgConnection};
+use zero2prod::configuration::{self, get_configuration};
+
 #[tokio::test]
 async fn health_check_works() {
     let host = spawn_app();
@@ -19,6 +22,11 @@ async fn health_check_works() {
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
     let host = spawn_app();
+    let configuration = get_configuration().expect("Unable to read configuration");
+    let connection_string = configuration.database.connection_string();
+    let mut connection = PgConnection::connect(&connection_string)
+        .await
+        .expect("Failed to create connection to postgres");
     let client = reqwest::Client::new();
 
     let body = "name=kcnklub&email=test@test.com";
@@ -30,7 +38,14 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .await
         .expect("Failed to execute request");
 
+    let saved = sqlx::query!("Select email, name from subscriptions",)
+        .fetch_one(&mut connection)
+        .await
+        .expect("Failed to fetch data from the database");
+
     assert!(response.status().is_success());
+    assert_eq!(saved.email, "test@test.com");
+    assert_eq!(saved.name, "kcnklub");
 }
 
 #[tokio::test]
@@ -64,7 +79,7 @@ async fn subscribe_return_a_400_when_data_is_missing() {
 fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Unable to bind to socket");
     let port = listener.local_addr().unwrap().port();
-    let server = zero2prod::run(listener).expect("Unable to bind to port");
+    let server = zero2prod::startup::run(listener).expect("Unable to bind to port");
     let _ = tokio::spawn(server);
     format!("http://localhost:{}", port)
 }
