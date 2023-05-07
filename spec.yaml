@@ -21,4 +21,4 @@ databases:
     name: newletter
     num_nodes: 1
     size: db-s-dev-database
-    version: 14
+    version: "15"
