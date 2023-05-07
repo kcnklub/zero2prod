@@ -1,0 +1,24 @@
+name: zero2prod
+region: nyc1
+services: 
+  - name: zero2prod
+    dockerfile_path: Dockerfile
+    source_dir: .
+    github: 
+      branch: main
+      deploy_on_push: true
+      repo: kcnklub/zero2prod
+    health_check:
+      http_path: /health_check
+    http_port: 8000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /
+
+databases:
+  - engine: PG
+    name: newletter
+    num_nodes: 1
+    size: db-s-dev-database
+    version: 14

@@ -11,7 +11,10 @@ async fn main() -> Result<(), std::io::Error> {
 
     let configuration =
         zero2prod::configuration::get_configuration().expect("Unable to get configuration");
-    let address = format!("0.0.0.0:{}", configuration.application_port);
+    let address = format!(
+        "{}:{}",
+        configuration.application_settings.host, configuration.application_settings.port
+    );
     let connection_pool =
         PgPool::connect_lazy(&configuration.database.connection_string().expose_secret())
             .expect("Uable to create db connection");
