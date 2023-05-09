@@ -92,6 +92,34 @@ async fn subscribe_return_a_400_when_data_is_missing() {
     }
 }
 
+#[tokio::test]
+async fn subscribe_return_a_200_when_fields_are_present_but_empty() {
+    let app = spawn_app().await;
+    let client = reqwest::Client::new();
+    let test_cases = vec![
+        ("name=&email=test@test.com", "empty name"),
+        ("name=test&email=", "empty email"),
+        ("name=test&email=definitely-not-an-email", "invalid email"),
+    ];
+
+    for (body, message) in test_cases {
+        let response = client
+            .post(&format!("{}/subscriptions", &app.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to make request.");
+
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "The api did not return a 400 bad request when the payload was {}.",
+            message
+        );
+    }
+}
+
 async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
     let listener = TcpListener::bind("127.0.0.1:0").expect("Unable to bind to socket");
