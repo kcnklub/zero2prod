@@ -44,7 +44,7 @@ impl DatabaseSettings {
         };
         PgConnectOptions::new()
             .username(&self.username)
-            .password(&self.password.expose_secret())
+            .password(self.password.expose_secret())
             .host(&self.host)
             .port(self.port)
             .ssl_mode(ssl_mode)
@@ -100,7 +100,7 @@ impl TryFrom<String> for Environment {
         match value.to_lowercase().as_str() {
             "local" => Ok(Environment::Local),
             "production" => Ok(Environment::Production),
-            other => Err(format!("{} is not a supported Environment", other)),
+            other => Err(format!("{other} is not a supported Environment")),
         }
     }
 }
