@@ -7,8 +7,8 @@ COPY . .
 RUN apt-get update && apt-get install -y \
     libpq-dev
 
-ENV SQLX_OFFLINE true
+ENV SQLX_OFFLINE=true
 
-RUN cargo build --release
+RUN cargo build --release --bin
 
 CMD ["./target/release/zero2prod"]
