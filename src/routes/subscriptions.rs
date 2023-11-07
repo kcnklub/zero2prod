@@ -94,7 +94,10 @@ async fn send_confirmation_email(
     email_client: &EmailClient,
     base_url: &String,
 ) -> Result<(), reqwest::Error> {
-    let confirmation_link = format!("{}/subscriptions/confirm", base_url);
+    let confirmation_link = format!(
+        "{}/subscriptions/confirm?subscription_token=my_token",
+        base_url
+    );
     email_client
         .send_email(
             new_subscriber.email,
