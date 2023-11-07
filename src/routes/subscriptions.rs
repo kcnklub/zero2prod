@@ -54,7 +54,7 @@ pub async fn subscribe(
         return HttpResponse::InternalServerError().finish();
     }
 
-    HttpResponse::Accepted().finish()
+    HttpResponse::Ok().finish()
 }
 
 #[tracing::instrument(
@@ -68,13 +68,12 @@ pub async fn insert_subscriber(
     sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at, status)
-    VALUES ($1, $2, $3, $4, $5)
+    VALUES ($1, $2, $3, $4, 'pending_confirmation')
     "#,
         Uuid::new_v4(),
         new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
-        Utc::now(),
-        "confirmed"
+        Utc::now()
     )
     .execute(pool)
     .await
