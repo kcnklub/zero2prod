@@ -1,6 +1,5 @@
-use actix_web::web;
-use actix_web::HttpResponse;
-use actix_web::Responder;
+use actix_web::{HttpResponse, Responder};
+use actix_web::web::{Data, Form};
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -8,6 +7,7 @@ use uuid::Uuid;
 use crate::domain::NewSubscriber;
 use crate::domain::SubscriberEmail;
 use crate::domain::SubscriberName;
+use crate::email_client::EmailClient;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -26,21 +26,30 @@ impl TryFrom<FormData> for NewSubscriber {
 
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(form, pool),
+    skip(form, pool, email_client),
     fields(
         subscriber_email = %form.email,
         subscriber_name = %form.name,
     )
 )]
-pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> impl Responder {
+pub async fn subscribe(form: Form<FormData>, pool: Data<PgPool>, email_client: Data<EmailClient>) -> impl Responder {
     let new_subscriber = match form.0.try_into() {
         Ok(new_sub) => new_sub,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    match insert_subscriber(&new_subscriber, &pool).await {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+
+    if insert_subscriber(&new_subscriber, &pool).await.is_err() {
+        return HttpResponse::InternalServerError().finish();
     }
+
+    if send_confirmation_email(&email_client, new_subscriber)
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError().finish();
+    }
+
+    HttpResponse::Accepted().finish()
 }
 
 #[tracing::instrument(
@@ -68,5 +77,32 @@ pub async fn insert_subscriber(
         tracing::error!("Failed to execute query: {:?}", error);
         error
     })?;
+    Ok(())
+}
+
+#[tracing::instrument(
+    name = "Send a confirmation email to a new subscriber",
+    skip(email_client, new_subscriber)
+)]
+async fn send_confirmation_email(
+    email_client: &EmailClient,
+    new_subscriber: NewSubscriber,
+) -> Result<(), reqwest::Error> {
+    let confirmation_link = "https://there-is-no-link-yet.com/subscriptions/confirm".to_string();
+    email_client
+        .send_email(
+            new_subscriber.email,
+            "Welcome!",
+            &format!(
+                "Welcome to our newsletter!<br/>Visit {} to confirm your subscription",
+                confirmation_link
+            ),
+            &format!(
+                "Welcome to our newsletter!\nVisit {} to confirm your subscription",
+                confirmation_link
+            ),
+        )
+        .await?;
+
     Ok(())
 }
