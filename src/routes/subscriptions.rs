@@ -1,5 +1,5 @@
-use actix_web::{HttpResponse, Responder};
 use actix_web::web::{Data, Form};
+use actix_web::{HttpResponse, Responder};
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -32,8 +32,13 @@ impl TryFrom<FormData> for NewSubscriber {
         subscriber_name = %form.name,
     )
 )]
-pub async fn subscribe(form: Form<FormData>, pool: Data<PgPool>, email_client: Data<EmailClient>) -> impl Responder {
-    let new_subscriber = match form.0.try_into() {
+pub async fn subscribe(
+    Form(form): Form<FormData>,
+    pool: Data<PgPool>,
+    email_client: Data<EmailClient>,
+) -> impl Responder {
+    println!("Adding a new subscriber");
+    let new_subscriber = match form.try_into() {
         Ok(new_sub) => new_sub,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -88,13 +93,14 @@ async fn send_confirmation_email(
     email_client: &EmailClient,
     new_subscriber: NewSubscriber,
 ) -> Result<(), reqwest::Error> {
-    let confirmation_link = "https://there-is-no-link-yet.com/subscriptions/confirm".to_string();
+    let confirmation_link = "https://there-is-no-link-yet.com/subscriptions/confirm";
     email_client
         .send_email(
             new_subscriber.email,
             "Welcome!",
             &format!(
-                "Welcome to our newsletter!<br/>Visit {} to confirm your subscription",
+                "Welcome to our newsletter!<br/>\
+                Visit <a href=\"{}\"></a> to confirm your subscription",
                 confirmation_link
             ),
             &format!(
