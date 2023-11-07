@@ -26,7 +26,7 @@ impl TryFrom<FormData> for NewSubscriber {
 
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(form, pool, email_client),
+    skip(form, pool, email_client, base_url),
     fields(
         subscriber_email = %form.email,
         subscriber_name = %form.name,
@@ -36,6 +36,7 @@ pub async fn subscribe(
     Form(form): Form<FormData>,
     pool: Data<PgPool>,
     email_client: Data<EmailClient>,
+    base_url: Data<String>,
 ) -> impl Responder {
     println!("Adding a new subscriber");
     let new_subscriber = match form.try_into() {
@@ -47,7 +48,7 @@ pub async fn subscribe(
         return HttpResponse::InternalServerError().finish();
     }
 
-    if send_confirmation_email(&email_client, new_subscriber)
+    if send_confirmation_email(new_subscriber, &email_client, &base_url)
         .await
         .is_err()
     {
@@ -89,10 +90,11 @@ pub async fn insert_subscriber(
     skip(email_client, new_subscriber)
 )]
 async fn send_confirmation_email(
-    email_client: &EmailClient,
     new_subscriber: NewSubscriber,
+    email_client: &EmailClient,
+    base_url: &String,
 ) -> Result<(), reqwest::Error> {
-    let confirmation_link = "https://there-is-no-link-yet.com/subscriptions/confirm";
+    let confirmation_link = format!("{}/subscriptions/confirm", base_url);
     email_client
         .send_email(
             new_subscriber.email,
