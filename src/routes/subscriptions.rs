@@ -44,7 +44,6 @@ pub async fn subscribe(
     base_url: Data<String>,
 ) -> impl Responder {
     println!("Adding a new subscriber");
-
     let new_subscriber = match form.try_into() {
         Ok(new_sub) => new_sub,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -64,6 +63,7 @@ pub async fn subscribe(
         .await
         .is_err()
     {
+        println!("Failed to store subscription token");
         return HttpResponse::InternalServerError().finish();
     }
 
@@ -71,10 +71,12 @@ pub async fn subscribe(
         .await
         .is_err()
     {
+        println!("Failed to send confirmation email");
         return HttpResponse::InternalServerError().finish();
     }
 
     if transaction.commit().await.is_err() {
+        println!("Failed to commit transaction");
         return HttpResponse::InternalServerError().finish();
     }
 
