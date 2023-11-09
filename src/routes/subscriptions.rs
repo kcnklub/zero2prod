@@ -156,7 +156,7 @@ async fn send_confirmation_email(
         .await;
 
     if let Err(error) = result {
-        tracing::error!("Failed to send confirmation email: {:?}", error);
+        tracing::info!("Failed to send confirmation email: {:?}", error);
         return Err(error);
     }
 
