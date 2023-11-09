@@ -1,5 +1,6 @@
 application_settings:
   host: 0.0.0.0
+  base_url: "https:/zero2prod-bniwl.ondigitalocean.app"
 database:
   require_ssl: true
 email_configuration: 
