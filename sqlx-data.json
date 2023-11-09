@@ -1,5 +1,62 @@
 {
   "db": "PostgreSQL",
+  "316c545ec6f8ebec0962f1954420c919f3b05c2f168e8707b827a29f8ced43ef": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "DELETE FROM subscription_tokens WHERE subscription_id = $1"
+  },
+  "5fe5f98a5899b6dd473621d5800b735dde3f21c0ca224791299510c53ae87741": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n    INSERT INTO subscription_tokens (subscription_token, subscription_id)\n    VALUES ($1, $2)\n    "
+  },
+  "909697a60dd63e7f4f836c32400eb5769e2bbc120a36585ebbe5cf5b069d271a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "subscription_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT subscription_id FROM subscription_tokens WHERE subscription_token = $1"
+  },
+  "a71a1932b894572106460ca2e34a63dc0cb8c1ba7a70547add1cddbb68133c2b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "UPDATE subscriptions SET status = 'confirmed' WHERE id = $1"
+  },
   "f662f52204ac729545aafa231ee19008d7ca139a923e5f7a1e6fece3a4fa8884": {
     "describe": {
       "columns": [],
