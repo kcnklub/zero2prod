@@ -1,9 +1,7 @@
-use actix_web::body;
 use wiremock::{
     matchers::{method, path},
     Mock, ResponseTemplate,
 };
-use zero2prod::email_client;
 
 use crate::helpers::spawn_app;
 

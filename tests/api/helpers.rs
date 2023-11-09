@@ -93,6 +93,7 @@ pub async fn spawn_app() -> TestApp {
         .expect("Failed to build application");
 
     let application_port = application.port();
+    println!("{}", application_port);
     let _ = tokio::spawn(application.server);
     TestApp {
         address: format!("http://127.0.0.1:{}", application.port),
