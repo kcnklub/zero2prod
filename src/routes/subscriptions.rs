@@ -139,7 +139,7 @@ async fn send_confirmation_email(
         "{}/subscriptions/confirm?subscription_token={}",
         base_url, token
     );
-    email_client
+    let result = email_client
         .send_email(
             new_subscriber.email,
             "Welcome!",
@@ -153,7 +153,12 @@ async fn send_confirmation_email(
                 confirmation_link
             ),
         )
-        .await?;
+        .await;
+
+    if let Err(error) = result {
+        tracing::error!("Failed to send confirmation email: {:?}", error);
+        return Err(error);
+    }
 
     Ok(())
 }
