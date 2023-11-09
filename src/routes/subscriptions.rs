@@ -139,12 +139,13 @@ async fn send_confirmation_email(
         "{}/subscriptions/confirm?subscription_token={}",
         base_url, token
     );
+    println!("Confirmation link: {}", confirmation_link);
     let result = email_client
         .send_email(
             new_subscriber.email,
             "Welcome!",
             &format!(
-                "Welcome to our newsletter!<br/>\
+                "Welcome to my newsletter!<br/>
                 Visit <a href=\"{}\"></a> to confirm your subscription",
                 confirmation_link
             ),
