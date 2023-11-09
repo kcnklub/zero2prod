@@ -83,10 +83,6 @@ pub async fn subscribe(
     HttpResponse::Ok().finish()
 }
 
-#[tracing::instrument(
-    name = "Saving new subscriber details to the database",
-    skip(new_subscriber, pool)
-)]
 pub async fn insert_subscriber(
     new_subscriber: &NewSubscriber,
     pool: &mut Transaction<'_, Postgres>,
@@ -133,10 +129,6 @@ async fn store_token(
     Ok(())
 }
 
-#[tracing::instrument(
-    name = "Send a confirmation email to a new subscriber",
-    skip(email_client, new_subscriber)
-)]
 async fn send_confirmation_email(
     new_subscriber: NewSubscriber,
     email_client: &EmailClient,

@@ -44,7 +44,8 @@ impl EmailClient {
             html_body: html_content,
             text_body: text_content,
         };
-        self.http_client
+        let response = self
+            .http_client
             .post(&url)
             .header(
                 "X-Postmark-Server-Token",
@@ -52,9 +53,15 @@ impl EmailClient {
             )
             .json(&request_body)
             .send()
-            .await?
-            .error_for_status()?;
-        Ok(())
+            .await;
+
+        match response {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                tracing::error!("Failed to send confirmation email: {:?}", e);
+                Err(e)
+            }
+        }
     }
 }
 
