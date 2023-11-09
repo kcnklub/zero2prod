@@ -3,3 +3,6 @@ application_settings:
   base_url: "http://127.0.0.1"
 database:
   require_ssl: false
+email_configuration: 
+  base_url: "https://api.postmarkapp.com/email"
+  sender_email: "kylemiller@kylemiller.io"
