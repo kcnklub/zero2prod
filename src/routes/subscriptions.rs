@@ -145,19 +145,19 @@ async fn send_confirmation_email(
             new_subscriber.email,
             "Welcome!",
             &format!(
-                "Welcome to my newsletter!<br/>
-                Visit <a href=\"{}\"></a> to confirm your subscription",
+                "<html>Welcome to my new Newsletter!<br/>
+                Visit <a href=\"{}\">here</a> to confirm your subscription</html>",
                 confirmation_link
             ),
             &format!(
-                "Welcome to our newsletter!\nVisit {} to confirm your subscription",
+                "Welcome to my new Newsletter!\nVisit {} to confirm your subscription",
                 confirmation_link
             ),
         )
         .await;
 
     if let Err(error) = result {
-        tracing::info!("Failed to send confirmation email: {:?}", error);
+        println!("Failed to send confirmation email: {:?}", error);
         return Err(error);
     }
 
