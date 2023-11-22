@@ -19,9 +19,11 @@ pub fn run(
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
+            .route("/", web::get().to(routes::home))
             .route("/health_check", web::get().to(routes::health_check))
             .route("/subscriptions", web::post().to(routes::subscribe))
             .route("/subscriptions/confirm", web::get().to(routes::confirm))
+            .route("/newsletters", web::post().to(routes::newsletter))
             .app_data(db_connection.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())

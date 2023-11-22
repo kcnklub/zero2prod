@@ -1,3 +1,4 @@
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use once_cell::sync::Lazy;
 use reqwest::Url;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
@@ -22,11 +23,50 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     }
 });
 
+pub struct TestUser {
+    pub user_id: Uuid,
+    pub name: String,
+    pub password: String,
+}
+
+impl TestUser {
+    pub fn generate() -> Self {
+        Self {
+            user_id: Uuid::new_v4(),
+            name: Uuid::new_v4().to_string(),
+            password: Uuid::new_v4().to_string(),
+        }
+    }
+
+    async fn store(&self, pool: &PgPool) {
+        let salt = SaltString::generate(&mut rand::thread_rng());
+
+        let password_hash = Argon2::default()
+            .hash_password(self.password.as_bytes(), &salt)
+            .expect("Failed to hash password")
+            .to_string();
+
+        sqlx::query!(
+            r#"
+            INSERT INTO users (user_id, name, password_hash)
+            VALUES ($1, $2, $3)
+            "#,
+            self.user_id,
+            self.name,
+            password_hash
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to insert test user");
+    }
+}
+
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
     pub email_server: MockServer,
     pub port: u16,
+    pub test_user: TestUser,
 }
 
 pub struct ConfirmationLinks {
@@ -71,6 +111,17 @@ impl TestApp {
             plain_text: text_body,
         }
     }
+
+    pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
+        let client = reqwest::Client::new();
+        client
+            .post(&format!("{}/newsletters", self.address))
+            .basic_auth(&self.test_user.name, Some(&self.test_user.password))
+            .json(&body)
+            .send()
+            .await
+            .expect("Failed to execute request")
+    }
 }
 pub async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
@@ -95,12 +146,15 @@ pub async fn spawn_app() -> TestApp {
     let application_port = application.port();
     println!("{}", application_port);
     let _ = tokio::spawn(application.server);
-    TestApp {
+    let test_app = TestApp {
         address: format!("http://127.0.0.1:{}", application.port),
         db_pool: get_connection_pool(&configuration.database),
         email_server,
         port: application_port,
-    }
+        test_user: TestUser::generate(),
+    };
+    test_app.test_user.store(&test_app.db_pool).await;
+    test_app
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {
