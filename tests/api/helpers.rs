@@ -1,6 +1,6 @@
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use once_cell::sync::Lazy;
-use reqwest::Url;
+use reqwest::{Body, Url};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
@@ -67,6 +67,7 @@ pub struct TestApp {
     pub email_server: MockServer,
     pub port: u16,
     pub test_user: TestUser,
+    pub client: reqwest::Client,
 }
 
 pub struct ConfirmationLinks {
@@ -76,8 +77,7 @@ pub struct ConfirmationLinks {
 
 impl TestApp {
     pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
-        let client = reqwest::Client::new();
-        client
+        self.client
             .post(&format!("{}/subscriptions", self.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
@@ -113,14 +113,36 @@ impl TestApp {
     }
 
     pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
-        let client = reqwest::Client::new();
-        client
+        self.client
             .post(&format!("{}/newsletters", self.address))
             .basic_auth(&self.test_user.name, Some(&self.test_user.password))
             .json(&body)
             .send()
             .await
             .expect("Failed to execute request")
+    }
+
+    pub async fn post_login_form<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.client
+            .post(&format!("{}/login", self.address))
+            .form(body)
+            .send()
+            .await
+            .expect("Failed to execute request")
+    }
+
+    pub async fn get_login_html(&self) -> String {
+        self.client
+            .get(&format!("{}/login", self.address))
+            .send()
+            .await
+            .expect("Failed to execute request")
+            .text()
+            .await
+            .unwrap()
     }
 }
 pub async fn spawn_app() -> TestApp {
@@ -146,12 +168,18 @@ pub async fn spawn_app() -> TestApp {
     let application_port = application.port();
     println!("{}", application_port);
     let _ = tokio::spawn(application.server);
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .cookie_store(true)
+        .build()
+        .expect("Failed to create reqwest client");
     let test_app = TestApp {
         address: format!("http://127.0.0.1:{}", application.port),
         db_pool: get_connection_pool(&configuration.database),
         email_server,
         port: application_port,
         test_user: TestUser::generate(),
+        client,
     };
     test_app.test_user.store(&test_app.db_pool).await;
     test_app
@@ -177,4 +205,9 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("unable to migrate db");
 
     connection_pool
+}
+
+pub fn assert_is_redirect_to(response: &reqwest::Response, location: &str) {
+    assert_eq!(response.status().as_u16(), 303);
+    assert_eq!(response.headers().get("location").unwrap(), location);
 }
