@@ -1,4 +1,5 @@
 use actix_web::{dev::Server, web, App, HttpServer};
+use secrecy::Secret;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::{net::TcpListener, time::Duration};
 use tracing_actix_web::TracingLogger;
@@ -7,15 +8,19 @@ use crate::{
     configuration::DatabaseSettings, configuration::Settings, email_client::EmailClient, routes,
 };
 
+pub struct HmacSecret(pub Secret<String>);
+
 pub fn run(
     listener: TcpListener,
     connection: PgPool,
     email_client: EmailClient,
     base_url: String,
+    hmac_secret: Secret<String>,
 ) -> Result<Server, std::io::Error> {
     let db_connection = web::Data::new(connection);
     let email_client = web::Data::new(email_client);
     let base_url = web::Data::new(base_url);
+    let hmac_secret = web::Data::new(HmacSecret(hmac_secret.clone()));
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
@@ -29,6 +34,7 @@ pub fn run(
             .app_data(db_connection.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
+            .app_data(hmac_secret.clone())
     })
     .listen(listener)?
     .run();
@@ -68,6 +74,7 @@ impl Application {
             connection_pool,
             email_client,
             configuration.application_settings.base_url,
+            configuration.application_settings.hmac_secret,
         )?;
         Ok(Self { port, server })
     }
