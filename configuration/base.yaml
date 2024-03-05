@@ -1,6 +1,6 @@
 application_settings: 
   port: 8000
-  hmac_secret: "something super shhhh"
+  hmac_secret: "something super shhhhthisneeds to be longer how much longer does this have to be?"
 database:
   username: "postgres"
   password: "password"
@@ -12,3 +12,4 @@ email_configuration:
   sender_email: "test@gmail.com"
   authorization_token: "my_token"
   timeout_milliseconds: 10000
+redis_url: "redis://127.0.0.1:6379"
