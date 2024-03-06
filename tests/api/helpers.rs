@@ -144,6 +144,17 @@ impl TestApp {
             .await
             .unwrap()
     }
+
+    pub async fn get_admin_dashboard_html(&self) -> String {
+        self.client
+            .get(&format!("{}/admin/dashboard", self.address))
+            .send()
+            .await
+            .expect("Failed to execute request")
+            .text()
+            .await
+            .unwrap()
+    }
 }
 pub async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
