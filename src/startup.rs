@@ -46,6 +46,10 @@ pub async fn run(
             .route("/subscriptions", web::post().to(routes::subscribe))
             .route("/subscriptions/confirm", web::get().to(routes::confirm))
             .route("/newsletters", web::post().to(routes::newsletter))
+            .route(
+                "/admin/dashboard",
+                web::get().to(crate::routes::admin_dashboard),
+            )
             .app_data(db_connection.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
