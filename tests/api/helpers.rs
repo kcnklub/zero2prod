@@ -1,6 +1,6 @@
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use once_cell::sync::Lazy;
-use reqwest::{Body, Url};
+use reqwest::{Response, Url};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
@@ -46,6 +46,8 @@ impl TestUser {
             .expect("Failed to hash password")
             .to_string();
 
+        dbg!(&password_hash);
+
         sqlx::query!(
             r#"
             INSERT INTO users (user_id, name, password_hash)
@@ -76,7 +78,7 @@ pub struct ConfirmationLinks {
 }
 
 impl TestApp {
-    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+    pub async fn post_subscriptions(&self, body: String) -> Response {
         self.client
             .post(&format!("{}/subscriptions", self.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -112,7 +114,7 @@ impl TestApp {
         }
     }
 
-    pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
+    pub async fn post_newsletters(&self, body: serde_json::Value) -> Response {
         self.client
             .post(&format!("{}/newsletters", self.address))
             .basic_auth(&self.test_user.name, Some(&self.test_user.password))
@@ -122,7 +124,7 @@ impl TestApp {
             .expect("Failed to execute request")
     }
 
-    pub async fn post_login_form<Body>(&self, body: &Body) -> reqwest::Response
+    pub async fn post_login_form<Body>(&self, body: &Body) -> Response
     where
         Body: serde::Serialize,
     {
@@ -145,15 +147,45 @@ impl TestApp {
             .unwrap()
     }
 
-    pub async fn get_admin_dashboard_html(&self) -> String {
+    pub async fn get_admin_dashboard(&self) -> Response {
         self.client
             .get(&format!("{}/admin/dashboard", self.address))
             .send()
             .await
             .expect("Failed to execute request")
-            .text()
+    }
+
+    pub async fn get_admin_dashboard_html(&self) -> String {
+        self.get_admin_dashboard().await.text().await.unwrap()
+    }
+
+    pub async fn get_change_password(&self) -> Response {
+        self.client
+            .get(&format!("{}/admin/password", self.address))
+            .send()
             .await
-            .unwrap()
+            .expect("Failed to execute request")
+    }
+
+    pub async fn get_change_password_html(&self) -> String {
+        self.get_change_password().await.text().await.unwrap()
+    }
+
+    pub async fn post_change_password(&self, body: &serde_json::Value) -> Response {
+        self.client
+            .post(&format!("{}/admin/password", self.address))
+            .form(body)
+            .send()
+            .await
+            .expect("Failed to execute request")
+    }
+
+    pub async fn post_logout(&self) -> Response {
+        self.client
+            .post(&format!("{}/logout", self.address))
+            .send()
+            .await
+            .expect("Failed to execute request")
     }
 }
 pub async fn spawn_app() -> TestApp {
@@ -218,7 +250,7 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
     connection_pool
 }
 
-pub fn assert_is_redirect_to(response: &reqwest::Response, location: &str) {
+pub fn assert_is_redirect_to(response: &Response, location: &str) {
     assert_eq!(response.status().as_u16(), 303);
     assert_eq!(response.headers().get("location").unwrap(), location);
 }

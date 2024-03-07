@@ -1,3 +1,4 @@
+use actix_session::Session;
 use actix_web::{
     error::InternalError,
     http::header::LOCATION,
@@ -11,6 +12,8 @@ use sqlx::PgPool;
 use crate::{
     authentification::{validate_credentials, AuthError, Credentials},
     routes::error_chain_fmt,
+    session_state::TypedSession,
+    utils::e500,
 };
 
 #[derive(serde::Deserialize)]
@@ -36,6 +39,7 @@ impl std::fmt::Debug for LoginError {
 pub async fn login(
     Form(input): Form<FormData>,
     pool: Data<PgPool>,
+    session: TypedSession,
 ) -> Result<HttpResponse, InternalError<LoginError>> {
     let creds = Credentials {
         username: input.username,
@@ -44,8 +48,12 @@ pub async fn login(
     match validate_credentials(&pool, creds).await {
         Ok(user_id) => {
             tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
+            session.renew();
+            session
+                .insert_user_id(user_id)
+                .map_err(|e| login_redirect(LoginError::UnexpectedError(e.into())))?;
             Ok(HttpResponse::SeeOther()
-                .insert_header((LOCATION, "/"))
+                .insert_header((LOCATION, "/admin/dashboard"))
                 .finish())
         }
         Err(e) => {
@@ -53,12 +61,28 @@ pub async fn login(
                 AuthError::InvalidCredentials(_) => LoginError::AuthError(e.into()),
                 AuthError::UnexpectedError(_) => LoginError::UnexpectedError(e.into()),
             };
-
-            FlashMessage::error(e.to_string()).send();
-            let response = HttpResponse::SeeOther()
-                .insert_header((LOCATION, format!("/login")))
-                .finish();
-            Err(InternalError::from_response(e, response))
+            Err(login_redirect(e))
         }
     }
+}
+
+fn login_redirect(e: LoginError) -> InternalError<LoginError> {
+    FlashMessage::error(e.to_string()).send();
+    let response = HttpResponse::SeeOther()
+        .insert_header((LOCATION, format!("/login")))
+        .finish();
+    InternalError::from_response(e, response)
+}
+
+pub async fn logout(session: TypedSession) -> Result<HttpResponse, actix_web::Error> {
+    if session.get_user_id().map_err(e500)?.is_none() {
+        return Ok(HttpResponse::SeeOther()
+            .insert_header((LOCATION, "/login"))
+            .finish());
+    }
+    session.log_out();
+    FlashMessage::error("You have successfully logged out").send();
+    Ok(HttpResponse::SeeOther()
+        .insert_header((LOCATION, "/login"))
+        .finish())
 }
