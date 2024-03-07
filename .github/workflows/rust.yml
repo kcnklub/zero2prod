@@ -20,6 +20,8 @@ jobs:
           POSTGRES_DB: postgres
         ports: 
           - 5432:5432
+      redis: 
+        image: redis
     steps: 
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -67,6 +69,8 @@ jobs:
           POSTGRES_DB: postgres
         ports: 
           - 5432:5432
+      redis: 
+        image: redis
     steps: 
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -105,6 +109,8 @@ jobs:
           POSTGRES_DB: postgres
         ports: 
           - 5432:5432
+      redis: 
+        image: redis
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
