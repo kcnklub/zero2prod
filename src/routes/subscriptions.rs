@@ -112,8 +112,7 @@ pub async fn insert_subscriber(
         Utc::now()
     )
     .execute(pool)
-    .await
-    .map_err(|error| error)?;
+    .await?;
     Ok(subscriber_id)
 }
 
@@ -168,7 +167,7 @@ async fn store_token(
     )
     .execute(pool)
     .await
-    .map_err(|error| StoreTokenError(error))?;
+    .map_err(StoreTokenError)?;
     Ok(())
 }
 

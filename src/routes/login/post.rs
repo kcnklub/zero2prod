@@ -1,4 +1,3 @@
-use actix_session::Session;
 use actix_web::{
     error::InternalError,
     http::header::LOCATION,
@@ -17,7 +16,7 @@ use crate::{
 };
 
 #[derive(serde::Deserialize)]
-pub struct FormData {
+pub struct LoginFormData {
     username: String,
     password: Secret<String>,
 }
@@ -37,7 +36,7 @@ impl std::fmt::Debug for LoginError {
 }
 
 pub async fn login(
-    Form(input): Form<FormData>,
+    Form(input): Form<LoginFormData>,
     pool: Data<PgPool>,
     session: TypedSession,
 ) -> Result<HttpResponse, InternalError<LoginError>> {
@@ -69,7 +68,7 @@ pub async fn login(
 fn login_redirect(e: LoginError) -> InternalError<LoginError> {
     FlashMessage::error(e.to_string()).send();
     let response = HttpResponse::SeeOther()
-        .insert_header((LOCATION, format!("/login")))
+        .insert_header((LOCATION, "/login"))
         .finish();
     InternalError::from_response(e, response)
 }

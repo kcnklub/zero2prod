@@ -15,14 +15,14 @@ use super::error_chain_fmt;
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {
-    title: String,
-    content: Content,
+    _title: String,
+    _content: Content,
 }
 
 #[derive(serde::Deserialize)]
 pub struct Content {
-    html: String,
-    text: String,
+    _html: String,
+    _text: String,
 }
 
 struct ConfirmedSubscriber {
