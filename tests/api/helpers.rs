@@ -46,8 +46,6 @@ impl TestUser {
             .expect("Failed to hash password")
             .to_string();
 
-        dbg!(&password_hash);
-
         sqlx::query!(
             r#"
             INSERT INTO users (user_id, name, password_hash)
