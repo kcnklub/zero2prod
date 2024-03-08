@@ -7,7 +7,7 @@ use base64::Engine;
 use secrecy::Secret;
 use sqlx::PgPool;
 
-use crate::authentification::{validate_credentials, AuthError, Credentials};
+use crate::authentication::{validate_credentials, AuthError, Credentials};
 use crate::domain::SubscriberEmail;
 use crate::email_client::EmailClient;
 
@@ -73,7 +73,6 @@ pub async fn newsletter(
     email_client: web::Data<EmailClient>,
     http_request: HttpRequest,
 ) -> Result<HttpResponse, PublishError> {
-    println!("fetching newsletter");
     let creds =
         basic_authentication(http_request.headers()).map_err(PublishError::AuthorizationError)?;
     println!("creds feteched from basic auth");
