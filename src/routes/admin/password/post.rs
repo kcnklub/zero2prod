@@ -40,6 +40,7 @@ pub async fn change_password(
     };
 
     if let Err(e) = validate_credentials(&pool, credentials).await {
+        println!("error: {:?}", e);
         return match e {
             AuthError::InvalidCredentials(_) => {
                 FlashMessage::error("The Current Password is incorrect").send();

@@ -1,4 +1,4 @@
-use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use argon2::{password_hash::SaltString, Algorithm, Argon2, Params, PasswordHasher, Version};
 use once_cell::sync::Lazy;
 use reqwest::{Response, Url};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
