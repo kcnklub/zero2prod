@@ -23,7 +23,7 @@ pub struct Credentials {
 pub async fn validate_credentials(
     pool: &PgPool,
     credentials: Credentials,
-) -> Result<uuid::Uuid, AuthError> {
+) -> Result<Uuid, AuthError> {
     let mut user_id = None;
     let mut expected_password_hash = Secret::new(
         "$argon2id$v=19$m=15000,t=2,p=1$\
@@ -40,7 +40,7 @@ pub async fn validate_credentials(
         user_id = Some(stored_user_id);
         expected_password_hash = stored_password_hash;
     }
-    tracing::info!("we got the stored credentials");
+    println!("we got the stored credentials");
 
     spawn_blocking_with_tracing(|| {
         verify_password_hash(expected_password_hash, credentials.password)
@@ -48,6 +48,8 @@ pub async fn validate_credentials(
     .await
     .context("Failed to spawn blocking task")
     .map_err(AuthError::UnexpectedError)??;
+
+    println!("validation is done");
 
     user_id
         .ok_or_else(|| anyhow::anyhow!("Invalid credentials"))
@@ -59,21 +61,24 @@ fn verify_password_hash(
     expected_password_hash: Secret<String>,
     password: Secret<String>,
 ) -> Result<(), AuthError> {
-    tracing::info!("we are verifying the password hash");
+    println!("we are verifying the password hash");
     let expected_password_hash = PasswordHash::new(expected_password_hash.expose_secret())
         .context("Failed to parse password hash")?;
+
+    println!("we parsed the password hash");
 
     Argon2::default()
         .verify_password(password.expose_secret().as_bytes(), &expected_password_hash)
         .context("failed to verify password hash")
         .map_err(AuthError::InvalidCredentials)?;
+    println!("we verified the password hash");
     Ok(())
 }
 
 async fn get_stored_credentials(
     username: &str,
     pool: &PgPool,
-) -> Result<Option<(uuid::Uuid, Secret<String>)>, anyhow::Error> {
+) -> Result<Option<(Uuid, Secret<String>)>, anyhow::Error> {
     let user = sqlx::query!(
         r#"
         SELECT user_id, password_hash
@@ -118,14 +123,9 @@ pub async fn change_password(
 #[tracing::instrument(name = "Compute password hash", skip(password))]
 fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>, anyhow::Error> {
     let salt = argon2::password_hash::SaltString::generate(&mut rand::thread_rng());
-    let password_hash = Argon2::new(
-        Algorithm::Argon2id,
-        Version::V0x13,
-        Params::new(15000, 2, 1, None)?,
-    )
-    .hash_password(password.expose_secret().as_bytes(), &salt)
-    .context("Failed to hash password")?
-    .to_string();
-
+    let password_hash = Argon2::default()
+        .hash_password(password.expose_secret().as_bytes(), &salt)
+        .context("Failed to hash password")?
+        .to_string();
     Ok(Secret::new(password_hash))
 }

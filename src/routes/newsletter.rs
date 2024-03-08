@@ -15,14 +15,14 @@ use super::error_chain_fmt;
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {
-    _title: String,
-    _content: Content,
+    title: String,
+    content: Content,
 }
 
 #[derive(serde::Deserialize)]
 pub struct Content {
-    _html: String,
-    _text: String,
+    html: String,
+    text: String,
 }
 
 struct ConfirmedSubscriber {
@@ -73,8 +73,10 @@ pub async fn newsletter(
     email_client: web::Data<EmailClient>,
     http_request: HttpRequest,
 ) -> Result<HttpResponse, PublishError> {
+    println!("fetching newsletter");
     let creds =
         basic_authentication(http_request.headers()).map_err(PublishError::AuthorizationError)?;
+    println!("creds feteched from basic auth");
     let user_id = validate_credentials(&pool, creds)
         .await
         .map_err(|e| match e {
@@ -133,6 +135,7 @@ async fn gets_confirmed_subscriber(
 }
 
 fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
+    println!("fetching basic auth");
     let header_value = headers
         .get("Authorization")
         .context("Missing authorization header")?

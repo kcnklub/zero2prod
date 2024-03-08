@@ -147,15 +147,25 @@ async fn invalid_password_is_rejected() {
         }
     });
 
+    let address = format!("{}/newsletters", &app.address);
+    println!("address: {}", address);
+
     let response = reqwest::Client::new()
-        .post(&format!("{}/newsletters", &app.address))
+        .post(&address)
         .basic_auth(&app.test_user.name, Some("invalid-password"))
         .json(&newsletter_request_body)
         .send()
         .await
         .unwrap();
 
-    assert_eq!(response.status().as_u16(), 401);
+    println!("response: {:?}", &response);
+
+    let response_code = response.status().as_u16();
+    let response_text = response.text().await.unwrap();
+    println!("response_code: {}", response_code);
+    println!("response_text: {}", response_text);
+
+    assert_eq!(response_code, 401);
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
