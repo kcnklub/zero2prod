@@ -180,7 +180,7 @@ impl TestApp {
 
     pub async fn post_logout(&self) -> Response {
         self.client
-            .post(&format!("{}/logout", self.address))
+            .post(&format!("{}/admin/logout", self.address))
             .send()
             .await
             .expect("Failed to execute request")

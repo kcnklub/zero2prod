@@ -6,13 +6,15 @@ use actix_web::{
     App, HttpServer,
 };
 use actix_web_flash_messages::{storage::CookieMessageStore, FlashMessagesFramework};
+use actix_web_lab::middleware::from_fn;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::{net::TcpListener, time::Duration};
 use tracing_actix_web::TracingLogger;
 
 use crate::{
-    configuration::DatabaseSettings, configuration::Settings, email_client::EmailClient, routes,
+    authentication::reject_anonymous_users, configuration::DatabaseSettings,
+    configuration::Settings, email_client::EmailClient, routes,
 };
 
 pub struct HmacSecret(pub Secret<String>);
@@ -47,14 +49,18 @@ pub async fn run(
             .route("/", get().to(routes::home))
             .route("/login", get().to(routes::login_form))
             .route("/login", post().to(routes::login))
-            .route("/logout", post().to(routes::logout))
             .route("/health_check", get().to(routes::health_check))
             .route("/subscriptions", post().to(routes::subscribe))
             .route("/subscriptions/confirm", get().to(routes::confirm))
             .route("/newsletters", post().to(routes::newsletter))
-            .route("/admin/dashboard", get().to(routes::admin_dashboard))
-            .route("/admin/password", get().to(routes::change_password_form))
-            .route("/admin/password", post().to(routes::change_password))
+            .service(
+                web::scope("/admin")
+                    .wrap(from_fn(reject_anonymous_users))
+                    .route("/dashboard", get().to(routes::admin_dashboard))
+                    .route("/password", get().to(routes::change_password_form))
+                    .route("/password", post().to(routes::change_password))
+                    .route("/logout", post().to(routes::logout)),
+            )
             .app_data(db_connection.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
