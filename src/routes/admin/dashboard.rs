@@ -18,7 +18,26 @@ pub async fn admin_dashboard(
         message_html.push_str(&format!("<p>{}</p>", message.content()));
     }
 
-    Ok(HttpResponse::Ok().body(format!("Welcome, {}!<br />{}", username, message_html)))
+    let html = format!(
+        r#"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Dashboard</title>
+        </head>
+        <body>
+            <h1>Welcome, {}!</h1>
+            {}
+            <a href="logout">Logout</a>
+            <br />
+            <a href="newsletter">Create new newsletter</a>
+        </body>
+        </html>
+        "#,
+        username, message_html
+    );
+
+    Ok(HttpResponse::Ok().body(html))
 }
 
 #[tracing::instrument(name = "fetching username from database", skip(pool))]

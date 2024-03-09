@@ -1,7 +1,7 @@
 use actix_web::{
     error::InternalError,
     http::header::LOCATION,
-    web::{Data, Form},
+    web::{self, Data, Form},
     HttpResponse,
 };
 use actix_web_flash_messages::FlashMessage;
@@ -9,7 +9,7 @@ use secrecy::Secret;
 use sqlx::PgPool;
 
 use crate::{
-    authentication::{validate_credentials, AuthError, Credentials},
+    authentication::{validate_credentials, AuthError, Credentials, UserId},
     routes::error_chain_fmt,
     session_state::TypedSession,
     utils::e500,
@@ -73,12 +73,11 @@ fn login_redirect(e: LoginError) -> InternalError<LoginError> {
     InternalError::from_response(e, response)
 }
 
-pub async fn logout(session: TypedSession) -> Result<HttpResponse, actix_web::Error> {
-    if session.get_user_id().map_err(e500)?.is_none() {
-        return Ok(HttpResponse::SeeOther()
-            .insert_header((LOCATION, "/login"))
-            .finish());
-    }
+pub async fn logout(
+    session: TypedSession,
+    user_id: web::ReqData<UserId>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let _user_id = user_id.into_inner();
     session.log_out();
     FlashMessage::error("You have successfully logged out").send();
     Ok(HttpResponse::SeeOther()
