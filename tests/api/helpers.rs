@@ -34,7 +34,7 @@ impl TestUser {
         Self {
             user_id: Uuid::new_v4(),
             name: Uuid::new_v4().to_string(),
-            password: "password".to_string(),
+            password: Uuid::new_v4().to_string(),
         }
     }
 
@@ -114,9 +114,8 @@ impl TestApp {
 
     pub async fn post_newsletters(&self, body: serde_json::Value) -> Response {
         self.client
-            .post(&format!("{}/newsletters", self.address))
-            .basic_auth(&self.test_user.name, Some(&self.test_user.password))
-            .json(&body)
+            .post(&format!("{}/admin/newsletter", self.address))
+            .form(&body)
             .send()
             .await
             .expect("Failed to execute request")

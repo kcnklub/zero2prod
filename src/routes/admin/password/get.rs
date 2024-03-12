@@ -1,7 +1,7 @@
 use actix_web::{web, Error, HttpResponse};
 use actix_web_flash_messages::IncomingFlashMessages;
 
-use crate::{authentication::UserId, session_state::TypedSession};
+use crate::authentication::UserId;
 
 pub async fn change_password_form(
     flash_messages: IncomingFlashMessages,

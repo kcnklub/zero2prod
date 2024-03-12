@@ -12,7 +12,6 @@ use crate::{
     authentication::{validate_credentials, AuthError, Credentials, UserId},
     routes::error_chain_fmt,
     session_state::TypedSession,
-    utils::e500,
 };
 
 #[derive(serde::Deserialize)]

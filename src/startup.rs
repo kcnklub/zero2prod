@@ -60,7 +60,7 @@ pub async fn run(
                     .route("/password", post().to(routes::change_password))
                     .route("/newsletter", get().to(routes::get_newsletter_page))
                     .route("/newsletter", post().to(routes::send_newsletter))
-                    .route("/logout", get().to(routes::logout)),
+                    .route("/logout", post().to(routes::logout)),
             )
             .app_data(db_connection.clone())
             .app_data(email_client.clone())
